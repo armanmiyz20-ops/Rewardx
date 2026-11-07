@@ -1,0 +1,11 @@
+{
+  "name": "RewardX - Earn & Redeem",
+  "short_name": "RewardX",
+  "description": "RewardX Earn and Redeem App",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f4f2ff",
+  "theme_color": "#7138e8"
+}
