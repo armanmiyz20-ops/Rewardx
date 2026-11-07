@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RewardX - Earn & Redeem</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#f4f2ff;color:#222}
+header{background:linear-gradient(135deg,#5425b8,#913eff);color:white;padding:22px;border-radius:0 0 25px 25px}
+header h1{margin:5px 0}
+.page{display:none;padding-bottom:20px}.active{display:block}
+.balance,.card,.auth-box{background:white;margin:18px;padding:22px;border-radius:18px;box-shadow:0 3px 12px #ddd}
+.balance{text-align:center}.balance h2{color:#7138e8;font-size:36px}
+.section{padding:12px}
+button{background:#7138e8;color:white;border:0;padding:12px 18px;border-radius:10px;font-size:15px;cursor:pointer}
+button:disabled{background:#999}
+input{width:100%;padding:14px;margin:9px 0;border:1px solid #ccc;border-radius:10px;font-size:15px}
+.full{width:100%;margin-top:10px}
+.nav{display:flex;justify-content:space-around;flex-wrap:wrap;background:white;padding:10px 2px;position:sticky;bottom:0;box-shadow:0 -3px 12px #ddd;z-index:10}
+.nav button{font-size:11px;padding:10px 7px;margin:2px}
+.history{padding:12px 0;border-bottom:1px solid #eee}.green{color:green}.red{color:#d33}
+.note{font-size:13px;color:#777}.profile-icon{background:#eee5ff;width:85px;height:85px;border-radius:50%;display:flex;justify-content:center;align-items:center;font-size:42px;margin:10px auto}
+.center{text-align:center}.message{color:#d33;font-size:14px;margin-top:10px}
+.modal{display:none;position:fixed;inset:0;background:#0009;justify-content:center;align-items:center;padding:20px;z-index:999}
+.modal-box{background:white;padding:25px;border-radius:18px;width:100%;max-width:340px;text-align:center}
+.modal-buttons{display:flex;gap:10px;margin-top:20px}.modal-buttons button{flex:1}
+.cancel{background:#777}.danger{background:#d33}.reward-icon{font-size:35px}
+.status{display:inline-block;padding:6px 12px;border-radius:20px;background:#fff0c2;color:#946000;font-size:12px;font-weight:bold}
+.approved{background:#d8f8df;color:green}.rejected{background:#ffe0e0;color:#c22}
+.small-btn{padding:9px 12px;font-size:13px;margin:5px 3px}
+.active-status{color:green}.blocked-status{color:#d33}
+.activity-item{padding:12px 0;border-bottom:1px solid #eee}
+.activity-item strong{display:block;margin-bottom:5px}.activity-item small{color:#777}
+.stats-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:15px}
+.stat-box{background:#f4f0ff;padding:16px 10px;border-radius:14px;text-align:center}
+.stat-box h2{color:#7138e8;margin:8px 0;font-size:27px}.stat-box p{margin:0;font-size:13px;color:#555}
+.stat-wide{grid-column:span 2}
+</style>
+</head>
+<body>
+<header><h1>🚀 RewardX</h1><p id="welcomeText">Earn • Play • Redeem</p></header>
+
+<div id="signup" class="page active"><div class="auth-box">
+<h2>📝 Create Account</h2>
+<input id="signupName" placeholder="Your Name" autocomplete="name">
+<input id="signupEmail" type="email" placeholder="Email Address" autocomplete="email">
+<input id="signupPassword" type="password" placeholder="Create Password" autocomplete="new-password">
+<button class="full" onclick="signup()">Sign Up</button>
+<p class="center">Already have an account? <button onclick="showAuth('login')">Login</button></p>
+<button class="full danger" onclick="resetAccount()">Reset Local Demo Data</button>
+<p class="note">Firebase Authentication account. Password is not saved in this app.</p>
+<p id="signupMessage" class="message"></p>
+</div></div>
+
+<div id="login" class="page"><div class="auth-box">
+<h2>🔐 Welcome Back!</h2>
+<input id="loginEmail" type="email" placeholder="Email Address" autocomplete="email">
+<input id="loginPassword" type="password" placeholder="Password" autocomplete="current-password">
+<button class="full" onclick="login()">Login</button>
+<button class="full cancel" onclick="forgotPassword()">Forgot Password?</button>
+<p class="center">New user? <button onclick="showAuth('signup')">Create Account</button></p>
+<button class="full cancel" onclick="openAdminLogin()">⚙️ Admin Login</button>
+<button class="full danger" onclick="resetAccount()">Reset Local Demo Data</button>
+<p id="loginMessage" class="message"></p>
+</div></div>
+
+<div id="adminLoginPage" class="page"><div class="auth-box">
+<h2 class="center">🔐 Admin Login</h2><p class="center">RewardX Demo Admin Access</p>
+<input id="adminIdInput" placeholder="Admin ID">
+<input id="adminPasswordInput" type="password" placeholder="Admin Password">
+<button class="full" onclick="adminLogin()">Login as Admin</button>
+<button class="full cancel" onclick="showAuth('login')">Back to Login</button>
+<p id="adminLoginMessage" class="message"></p><p class="note">Demo only. Not real security. Credentials in code can be discovered.</p>
+</div></div>
+
+<div id="home" class="page"><div class="balance"><p>Available Points</p><h2>🪙 <span class="points">0</span></h2><p>Your Total Balance</p></div>
+<div class="section"><h2>🎁 Earn Rewards</h2>
+<div class="card"><h3>🎁 Daily Bonus</h3><p>Claim 10 Points every day!</p><button id="bonusBtn" onclick="claimBonus()">Claim Bonus</button></div>
+<div class="card"><h3>📺 Watch Ads</h3><p>Rewarded Ads coming soon.</p><button onclick="comingSoon()">Watch Now</button></div>
+<div class="card"><h3>🎮 Play Games</h3><p>Games coming soon.</p><button onclick="comingSoon()">Play Now</button></div>
+<div class="card center"><h2>🎁 RewardX Rewards</h2><p>Gift Card and UPI Demo Rewards</p><button onclick="showPage('wallet')">Explore Rewards</button></div>
+</div></div>
+
+<div id="wallet" class="page"><div class="section"><h2>💰 My Wallet</h2>
+<div class="card"><h3>Available Points</h3><h1>🪙 <span class="points">0</span></h1><p class="note">Demo Points only.</p></div>
+<h2>🎁 Gift Card Rewards</h2>
+<div class="card"><div class="reward-icon">🎁</div><h3>Gift Card - Basic</h3><p>100 Points Required</p><button onclick="redeem(100,'Gift Card Basic')">Redeem Demo</button></div>
+<div class="card"><div class="reward-icon">🎉</div><h3>Gift Card - Premium</h3><p>500 Points Required</p><button onclick="redeem(500,'Gift Card Premium')">Redeem Demo</button></div>
+<h2>📲 UPI Rewards</h2><div class="card"><div class="reward-icon">💸</div><h3>UPI Demo Reward</h3><p>1000 Points Required</p><button onclick="redeem(1000,'UPI Demo Reward')">Redeem Demo</button></div>
+<p class="note">Demo rewards only. No actual Gift Card or UPI payment is made.</p>
+</div></div>
+
+<div id="history" class="page"><div class="section"><h2>📊 Points History</h2><div class="card" id="historyList">No history yet.</div></div></div>
+<div id="requests" class="page"><div class="section"><h2>🎁 My Redeem Requests</h2><div class="card" id="requestHistoryList">No requests yet.</div></div></div>
+
+<div id="admin" class="page"><div class="section"><h2>⚙️ Admin Dashboard</h2>
+<div class="card center"><h3>👑 Welcome Admin</h3><p>RewardX Management</p></div>
+<div class="card"><h3>🪙 Total Points</h3><h1>🪙 <span class="points">0</span></h1></div>
+<div class="card"><h3>📊 App Statistics</h3><p class="note">This device's local demo data</p>
+<div class="stats-grid">
+<div class="stat-box"><p>🪙 Total Points</p><h2 id="statPoints">0</h2></div>
+<div class="stat-box"><p>📚 Total History</p><h2 id="statHistory">0</h2></div>
+<div class="stat-box"><p>🎁 Total Requests</p><h2 id="statTotalRequests">0</h2></div>
+<div class="stat-box"><p>⏳ Pending</p><h2 id="statPending">0</h2></div>
+<div class="stat-box"><p>✅ Approved</p><h2 id="statApproved">0</h2></div>
+<div class="stat-box"><p>❌ Rejected</p><h2 id="statRejected">0</h2></div>
+<div class="stat-box stat-wide"><p>👤 Account Status</p><h2 id="statAccountStatus">No User</h2></div>
+</div><button class="full" onclick="updateStatistics()">🔄 Refresh Statistics</button></div>
+<div class="card"><h3>👥 User Management</h3><p id="adminUser">No user found</p></div>
+<div class="card"><h3>🔍 User Search</h3><input id="userSearch" placeholder="Search by Name or Email" oninput="searchUser()"><div id="userSearchResult">Search for a user...</div></div>
+<div class="card"><h3>✏️ Edit User Details</h3><label>New User Name</label><input id="editUserName" placeholder="Enter New Name"><label>Firebase Email (read-only)</label><input id="editUserEmail" type="email" readonly><button class="full" onclick="saveUserDetails()">💾 Save User Name</button><p id="editUserMessage" class="message"></p></div>
+<div class="card"><h3>🚫 User Block & Unblock</h3><p>Local Demo Status: <strong id="userAccountStatus" class="active-status">Active</strong></p><button class="full danger" id="blockUserBtn" onclick="toggleUserBlock()">🚫 Block User</button><p id="blockUserMessage" class="message"></p><p class="note">This demo switch does not block Firebase Authentication or other devices.</p></div>
+<div class="card"><h3>📋 User Activity Log</h3><p class="note">Recent local demo activities.</p><div id="activityLogList">No activity yet.</div><button class="full danger" onclick="clearActivityLog()">🗑️ Clear Activity Log</button></div>
+<div class="card"><h3>📊 Total History</h3><h2 id="adminHistory">0</h2></div>
+<div class="card"><h3>🎁 Total Redeem Requests</h3><h2 id="totalRequests">0</h2><p>⏳ Pending: <strong id="pendingRequests">0</strong></p></div>
+<div class="card"><h3>🪙 Points Manager</h3><input type="number" id="adminAmount" placeholder="Enter Points" min="1"><button class="full" onclick="adminAddPoints()">➕ Add Points</button><button class="full danger" onclick="adminRemovePoints()">➖ Remove Points</button><p id="adminMessage" class="message"></p></div>
+<div class="card"><h3>🎁 Manage Redeem Requests</h3><div id="adminRequestList">No requests yet.</div></div>
+<p class="note">Local demo only. Not a secure production admin system; no real rewards are paid.</p>
+<button class="full" onclick="adminLogout()">🚪 Admin Logout</button><button class="full cancel" onclick="showPage('profile')">Back to Profile</button>
+</div></div>
+
+<div id="profile" class="page"><div class="section"><h2>👤 My Profile</h2><div class="card center">
+<div class="profile-icon">👤</div><h2 id="profileName">User</h2><p id="profileEmail">Email</p><hr><p>💰 My Points</p><h2>🪙 <span class="points">0</span></h2>
+<button class="full" onclick="logout()">🚪 Logout</button><button class="full" onclick="openAdminLogin()">⚙️ Admin Panel</button><button class="full danger" onclick="resetAccount()">🔄 Reset Local Demo Data</button>
+</div></div></div>
+
+<div class="modal" id="redeemModal"><div class="modal-box"><h2>🎁 Confirm Redeem</h2><p id="redeemText"></p><div class="modal-buttons"><button class="cancel" onclick="closeRedeem()">Cancel</button><button onclick="confirmRedeem()">Confirm</button></div></div></div>
+<div class="nav" id="navigation" style="display:none">
+<button onclick="showPage('home')">🏠 Home</button><button onclick="showPage('wallet')">💰 Wallet</button><button onclick="showPage('history')">📊 History</button><button onclick="showPage('requests')">🎁 Requests</button><button onclick="showPage('profile')">👤 Profile</button>
+</div>
+
+<script>
+/* FIREBASE CONFIG - Web config is public client configuration, not a password. */
+const firebaseConfig={
+ apiKey:"AIzaSyBzMRSyOgHn4ILpMiabZBxetHwFsiDcKV4",
+ authDomain:"rewardx-5de85.firebaseapp.com",
+ projectId:"rewardx-5de85",
+ storageBucket:"rewardx-5de85.firebasestorage.app",
+ messagingSenderId:"725641288755",
+ appId:"1:725641288755:web:8c2161a4460b73ea935746",
+ measurementId:"G-69W4H5BQVS"
+};
+
+let auth=null,db=null,currentUser=null,firebaseReady=false;
+let createUserWithEmailAndPassword,signInWithEmailAndPassword,signOut,sendPasswordResetEmail,onAuthStateChanged;
+let doc,setDoc,getDoc,updateDoc,serverTimestamp;
+const firebaseReadyPromise=(async()=>{
+ try{
+  const appMod=await import("https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js");
+  const authMod=await import("https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js");
+  const dbMod=await import("https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js");
+  const app=appMod.initializeApp(firebaseConfig);
+  auth=authMod.getAuth(app);db=dbMod.getFirestore(app);
+  ({createUserWithEmailAndPassword,signInWithEmailAndPassword,signOut,sendPasswordResetEmail,onAuthStateChanged}=authMod);
+  ({doc,setDoc,getDoc,updateDoc,serverTimestamp}=dbMod);
+  firebaseReady=true;
+  onAuthStateChanged(auth,async user=>{
+   currentUser=user;
+   if(user){
+    await loadFirebaseProfile(user);
+    if(account && account.blocked){await signOut(auth);return;}
+    loggedIn=true;localStorage.setItem("ateLoggedIn","yes");openApp();
+   }else{
+    loggedIn=false;localStorage.removeItem("ateLoggedIn");
+    document.getElementById("navigation").style.display="none";
+    if(!adminLoggedIn)showAuth(account?"login":"signup");
+   }
+  });
+ }catch(error){
+  console.error(error);
+  showAuth("login");
+  const m=document.getElementById("loginMessage");
+  if(m)m.textContent="Firebase connection failed. Open this page using an HTTPS website/hosted preview and check internet.";
+  throw error;
+ }
+})();
+
+let account=JSON.parse(localStorage.getItem("ateAccount")||"null");
+let loggedIn=false,adminLoggedIn=false;
+let points=Number(localStorage.getItem("myPoints"))||0;
+let historyData=JSON.parse(localStorage.getItem("pointHistory")||"[]");
+let rewardRequests=JSON.parse(localStorage.getItem("rewardRequests")||"[]");
+let activityLog=JSON.parse(localStorage.getItem("activityLog")||"[]");
+let pendingAmount=0,pendingName="";
+
+function saveData(){
+ localStorage.setItem("myPoints",String(points));
+ localStorage.setItem("pointHistory",JSON.stringify(historyData));
+ localStorage.setItem("rewardRequests",JSON.stringify(rewardRequests));
+ localStorage.setItem("activityLog",JSON.stringify(activityLog));
+}
+function logActivity(action,details){
+ activityLog.unshift({action,details,date:new Date().toLocaleString()});
+ activityLog=activityLog.slice(0,200);localStorage.setItem("activityLog",JSON.stringify(activityLog));showActivityLog();
+}
+function showActivityLog(){
+ const list=document.getElementById("activityLogList");if(!list)return;list.innerHTML="";
+ if(!activityLog.length){list.innerText="No activity yet.";return;}
+ activityLog.forEach(item=>{const div=document.createElement("div");div.className="activity-item";
+ const title=document.createElement("strong");title.textContent="📌 "+item.action;
+ const details=document.createElement("p");details.textContent=item.details;
+ const date=document.createElement("small");date.textContent=item.date;div.append(title,details,date);list.appendChild(div);});
+}
+function clearActivityLog(){
+ if(!adminLoggedIn){alert("Admin login required!");return;}
+ if(!confirm("Clear all local activity logs?"))return;
+ activityLog=[];localStorage.setItem("activityLog","[]");showActivityLog();alert("Activity Log Cleared!");
+}
+function updatePoints(){
+ document.querySelectorAll(".points").forEach(el=>el.textContent=points);saveData();
+}
+function showAuth(page){
+ document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+ const target=document.getElementById(page);if(target)target.classList.add("active");
+}
+async function loadFirebaseProfile(user){
+ try{
+  const snap=await getDoc(doc(db,"users",user.uid));
+  const data=snap.exists()?snap.data():{};
+  account={name:data.name||user.displayName||user.email.split("@")[0],email:user.email,uid:user.uid,blocked:false};
+  localStorage.setItem("ateAccount",JSON.stringify(account));
+ }catch(error){
+  console.error(error);
+  account={name:user.displayName||user.email.split("@")[0],email:user.email,uid:user.uid,blocked:false};
+  localStorage.setItem("ateAccount",JSON.stringify(account));
+ }
+}
+async function signup(){
+ const name=document.getElementById("signupName").value.trim();
+ const email=document.getElementById("signupEmail").value.trim().toLowerCase();
+ const password=document.getElementById("signupPassword").value;
+ const msg=document.getElementById("signupMessage");msg.style.color="#d33";msg.textContent="";
+ if(!name||!email||!password){msg.textContent="Please fill all fields!";return;}
+ if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){msg.textContent="Enter a valid email!";return;}
+ if(password.length<6){msg.textContent="Password must be at least 6 characters!";return;}
+ const button=document.querySelector('#signup button[onclick="signup()"]');button.disabled=true;button.textContent="Creating...";
+ try{
+  await firebaseReadyPromise;
+  const credential=await createUserWithEmailAndPassword(auth,email,password);
+  await setDoc(doc(db,"users",credential.user.uid),{name,email:credential.user.email,createdAt:serverTimestamp()});
+  account={name,email:credential.user.email,uid:credential.user.uid,blocked:false};
+  localStorage.setItem("ateAccount",JSON.stringify(account));
+  logActivity("Account Created","Firebase account created.");
+  msg.style.color="green";msg.textContent="Account created! Opening RewardX...";
+ }catch(error){
+  msg.textContent=authError(error);
+ }finally{button.disabled=false;button.textContent="Sign Up";}
+}
+async function login(){
+ const email=document.getElementById("loginEmail").value.trim().toLowerCase();
+ const password=document.getElementById("loginPassword").value;
+ const msg=document.getElementById("loginMessage");msg.style.color="#d33";msg.textContent="";
+ if(!email||!password){msg.textContent="Enter email and password.";return;}
+ const button=document.querySelector('#login button[onclick="login()"]');button.disabled=true;button.textContent="Logging in...";
+ try{
+  await firebaseReadyPromise;
+  await signInWithEmailAndPassword(auth,email,password);
+  document.getElementById("loginPassword").value="";
+  msg.style.color="green";msg.textContent="Login successful. Loading your account...";
+ }catch(error){msg.textContent=authError(error);}
+ finally{button.disabled=false;button.textContent="Login";}
+}
+function authError(error){
+ const code=error&&error.code?error.code:"";
+ const map={
+ "auth/email-already-in-use":"This email already has an account. Please login.",
+ "auth/invalid-email":"Please enter a valid email.",
+ "auth/weak-password":"Password must be at least 6 characters.",
+ "auth/invalid-credential":"Email or password is incorrect.",
+ "auth/user-not-found":"No account found. Please sign up.",
+ "auth/wrong-password":"Email or password is incorrect.",
+ "auth/too-many-requests":"Too many attempts. Wait a while and try again.",
+ "permission-denied":"Firestore permission denied. Check the Firestore rules.",
+ "auth/network-request-failed":"Network error. Check your internet."
+ };
+ return map[code]||("Could not complete request: "+(error.message||code||"Unknown error"));
+}
+async function forgotPassword(){
+ const email=document.getElementById("loginEmail").value.trim().toLowerCase();
+ const msg=document.getElementById("loginMessage");
+ if(!email){msg.textContent="Enter your email address first.";return;}
+ try{await firebaseReadyPromise;await sendPasswordResetEmail(auth,email);msg.style.color="green";msg.textContent="Password reset email sent. Check your inbox and spam folder.";}
+ catch(error){msg.style.color="#d33";msg.textContent=authError(error);}
+}
+async function logout(){
+ logActivity("User Logout",account?account.name+" logged out.":"User logged out.");
+ adminLoggedIn=false;
+ try{await firebaseReadyPromise;if(auth.currentUser)await signOut(auth);}catch(error){alert(authError(error));}
+ document.getElementById("redeemModal").style.display="none";document.getElementById("loginPassword").value="";
+}
+function resetAccount(){
+ if(!confirm("This clears this device's RewardX demo points, history and requests. Your Firebase login account will NOT be deleted. Continue?"))return;
+ ["ateAccount","ateLoggedIn","myPoints","pointHistory","bonusDate","rewardRequests","activityLog"].forEach(k=>localStorage.removeItem(k));
+ account=null;loggedIn=false;adminLoggedIn=false;points=0;historyData=[];rewardRequests=[];activityLog=[];
+ document.getElementById("navigation").style.display="none";document.getElementById("redeemModal").style.display="none";
+ ["signupName","signupEmail","signupPassword","loginEmail","loginPassword"].forEach(id=>document.getElementById(id).value="");
+ updatePoints();updateAdmin();showAuth("signup");
+ if(auth&&auth.currentUser)signOut(auth);
+ document.getElementById("signupMessage").textContent="Local demo data reset. Your Firebase account still exists.";
+}
+function openApp(){
+ if(!currentUser)return;
+ document.getElementById("navigation").style.display="flex";updateProfile();showPage("home");updatePoints();checkBonus();showHistory();showRequestHistory();updateAdmin();
+}
+function updateProfile(){
+ if(!account)return;
+ document.getElementById("profileName").textContent=account.name||"User";
+ document.getElementById("profileEmail").textContent=account.email||"";
+ document.getElementById("welcomeText").textContent="Welcome, "+(account.name||"User")+"!";
+}
+function showPage(page){
+ if(page==="admin"){
+  if(!adminLoggedIn){openAdminLogin();return;}
+  document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));document.getElementById("admin").classList.add("active");
+  updatePoints();updateAdmin();return;
+ }
+ if(!loggedIn||!currentUser){showAuth("login");return;}
+ document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));document.getElementById(page).classList.add("active");
+ updatePoints();showHistory();showRequestHistory();updateAdmin();
+}
+function openAdminLogin(){
+ adminLoggedIn=false;document.getElementById("adminIdInput").value="";document.getElementById("adminPasswordInput").value="";
+ document.getElementById("adminLoginMessage").textContent="";showAuth("adminLoginPage");
+}
+function adminLogin(){
+ const id=document.getElementById("adminIdInput").value.trim(),password=document.getElementById("adminPasswordInput").value;
+ const msg=document.getElementById("adminLoginMessage");
+ if(id==="admin"&&password==="123456"){
+  adminLoggedIn=true;logActivity("Admin Login","Demo admin opened dashboard.");loadAdminUserEditor();updateAdmin();showAuth("admin");
+ }else{msg.textContent="Wrong Admin ID or Password!";}
+}
+function adminLogout(){
+ adminLoggedIn=false;document.getElementById("adminPasswordInput").value="";logActivity("Admin Logout","Demo admin logged out.");
+ if(loggedIn&&currentUser)showPage("profile");else showAuth("login");
+}
+function searchUser(){
+ const search=document.getElementById("userSearch").value.toLowerCase().trim(),result=document.getElementById("userSearchResult");
+ result.innerHTML="";
+ if(!account){result.textContent="No user found!";return;}
+ if((account.name||"").toLowerCase().includes(search)||(account.email||"").toLowerCase().includes(search)){
+  ["👤 User Found","Name: "+account.name,"Email: "+account.email,"Points: "+points].forEach((t,i)=>{const el=document.createElement(i===0?"h3":"p");el.textContent=t;result.appendChild(el);});
+ }else result.textContent="❌ No matching user found!";
+}
+function loadAdminUserEditor(){
+ if(account){document.getElementById("editUserName").value=account.name||"";document.getElementById("editUserEmail").value=account.email||"";}
+}
+async function saveUserDetails(){
+ if(!adminLoggedIn){alert("Admin login required!");return;}
+ const msg=document.getElementById("editUserMessage"),newName=document.getElementById("editUserName").value.trim();
+ if(!account||!currentUser){msg.textContent="No signed-in Firebase user.";return;}
+ if(!newName){msg.textContent="Enter a name.";return;}
+ try{
+  // Firestore rule permits the signed-in owner to update only their own name.
+  await updateDoc(doc(db,"users",currentUser.uid),{name:newName});
+  account.name=newName;localStorage.setItem("ateAccount",JSON.stringify(account));updateProfile();updateAdmin();searchUser();
+  logActivity("User Name Updated","Name changed in the user's own Firestore profile.");
+  msg.style.color="green";msg.textContent="Name updated in Firestore.";
+ }catch(error){msg.textContent=authError(error);}
+}
+function updateBlockStatus(){
+ const status=document.getElementById("userAccountStatus"),button=document.getElementById("blockUserBtn");if(!status||!button)return;
+ if(!account){status.textContent="No User";status.className="blocked-status";button.disabled=true;button.textContent="No User Found";return;}
+ button.disabled=false;
+ if(account.blocked){status.textContent="🚫 Blocked (local demo)";status.className="blocked-status";button.textContent="✅ Unblock User";button.className="full";}
+ else{status.textContent="✅ Active";status.className="active-status";button.textContent="🚫 Block User";button.className="full danger";}
+}
+function toggleUserBlock(){
+ if(!adminLoggedIn){alert("Admin login required!");return;}if(!account){alert("No user found!");return;}
+ account.blocked=!account.blocked;localStorage.setItem("ateAccount",JSON.stringify(account));
+ logActivity(account.blocked?"User Blocked (Local Demo)":"User Unblocked (Local Demo)","This only changes the local demo flag.");
+ document.getElementById("blockUserMessage").textContent=account.blocked?"Demo status marked blocked. This does not disable Firebase sign-in.":"Demo status marked active.";
+ updateBlockStatus();updateAdmin();
+}
+function updateStatistics(){
+ const count=s=>rewardRequests.filter(r=>r.status===s).length;
+ document.getElementById("statPoints").textContent=points;document.getElementById("statHistory").textContent=historyData.length;
+ document.getElementById("statTotalRequests").textContent=rewardRequests.length;document.getElementById("statPending").textContent=count("Pending");
+ document.getElementById("statApproved").textContent=count("Approved");document.getElementById("statRejected").textContent=count("Rejected");
+ const status=document.getElementById("statAccountStatus");
+ status.textContent=!account?"No User":account.blocked?"🚫 Blocked (local)":"✅ Active";status.style.color=!account?"#777":account.blocked?"#d33":"green";
+}
+function updateAdmin(){
+ const user=document.getElementById("adminUser");if(user)user.textContent=account?account.name+" ("+account.email+")":"No user found";
+ document.getElementById("adminHistory").textContent=historyData.length;
+ document.getElementById("totalRequests").textContent=rewardRequests.length;
+ document.getElementById("pendingRequests").textContent=rewardRequests.filter(r=>r.status==="Pending").length;
+ showAdminRequests();updateBlockStatus();showActivityLog();updateStatistics();
+}
+function adminAddPoints(){
+ if(!adminLoggedIn){alert("Admin login required!");return;}
+ const amount=Number(document.getElementById("adminAmount").value),msg=document.getElementById("adminMessage");
+ if(!Number.isSafeInteger(amount)||amount<=0){msg.textContent="Enter valid points.";return;}
+ points+=amount;addHistory("Admin Added Points",amount,"plus");logActivity("Points Added",amount+" points added by demo admin.");
+ updatePoints();updateAdmin();msg.style.color="green";msg.textContent=amount+" Points Added.";document.getElementById("adminAmount").value="";
+}
+function adminRemovePoints(){
+ if(!adminLoggedIn){alert("Admin login required!");return;}
+ const amount=Number(document.getElementById("adminAmount").value),msg=document.getElementById("adminMessage");
+ if(!Number.isSafeInteger(amount)||amount<=0){msg.textContent="Enter valid points.";return;}
+ if(amount>points){msg.textContent="Not enough Points!";return;}
+ points-=amount;addHistory("Admin Removed Points",amount,"minus");logActivity("Points Removed",amount+" points removed by demo admin.");
+ updatePoints();updateAdmin();msg.style.color="green";msg.textContent=amount+" Points Removed.";document.getElementById("adminAmount").value="";
+}
+function claimBonus(){
+ const today=new Date().toDateString();
+ if(localStorage.getItem("bonusDate")===today){alert("Today's bonus already claimed!");return;}
+ points+=10;localStorage.setItem("bonusDate",today);addHistory("Daily Bonus",10,"plus");logActivity("Daily Bonus","User claimed 10 demo points.");
+ updatePoints();checkBonus();updateAdmin();alert("10 demo points added!");
+}
+function checkBonus(){
+ const btn=document.getElementById("bonusBtn");if(!btn)return;
+ const claimed=localStorage.getItem("bonusDate")===new Date().toDateString();
+ btn.disabled=claimed;btn.textContent=claimed?"Already Claimed":"Claim Bonus";
+}
+function addHistory(title,amount,type){
+ historyData.unshift({title,amount,type,date:new Date().toLocaleString()});saveData();showHistory();updateAdmin();
+}
+function showHistory(){
+ const list=document.getElementById("historyList");if(!list)return;list.innerHTML="";
+ if(!historyData.length){list.textContent="No history yet.";return;}
+ historyData.forEach(item=>{const div=document.createElement("div");div.className="history";
+ const title=document.createElement("strong");title.textContent=item.title;
+ const amount=document.createElement("p");amount.className=item.type==="plus"?"green":"red";amount.textContent=(item.type==="plus"?"+":"-")+item.amount+" Points";
+ const date=document.createElement("small");date.textContent=item.date;div.append(title,amount,date);list.appendChild(div);});
+}
+function redeem(amount,name){
+ if(amount<=0||points<amount){alert("Not enough Points!");return;}
+ pendingAmount=amount;pendingName=name;document.getElementById("redeemText").textContent="Create a demo request for "+name+" using "+amount+" Points?";
+ document.getElementById("redeemModal").style.display="flex";
+}
+function closeRedeem(){document.getElementById("redeemModal").style.display="none";pendingAmount=0;pendingName="";}
+function confirmRedeem(){
+ if(pendingAmount<=0||points<pendingAmount){closeRedeem();alert("Not enough Points!");return;}
+ const amount=pendingAmount,name=pendingName;
+ rewardRequests.unshift({id:Date.now(),name,amount,status:"Pending",date:new Date().toLocaleString()});points-=amount;
+ addHistory("Redeem Request: "+name,amount,"minus");logActivity("Redeem Request",name+" requested using "+amount+" points.");
+ saveData();updatePoints();showRequestHistory();updateAdmin();closeRedeem();alert("Demo request created: Pending. No payment was made.");
+}
+function showRequestHistory(){
+ const list=document.getElementById("requestHistoryList");if(!list)return;list.innerHTML="";
+ if(!rewardRequests.length){list.textContent="No requests yet.";return;}
+ rewardRequests.forEach(r=>{const card=document.createElement("div");card.className="history";
+ const title=document.createElement("strong");title.textContent=r.name;const amount=document.createElement("p");amount.textContent=r.amount+" Points";
+ const status=document.createElement("span");status.className="status";if(r.status==="Approved")status.classList.add("approved");if(r.status==="Rejected")status.classList.add("rejected");status.textContent=r.status;
+ const date=document.createElement("p");date.textContent=r.date;card.append(title,amount,status,date);list.appendChild(card);});
+}
+function showAdminRequests(){
+ const list=document.getElementById("adminRequestList");if(!list)return;list.innerHTML="";
+ if(!rewardRequests.length){list.textContent="No requests yet.";return;}
+ rewardRequests.forEach(r=>{const card=document.createElement("div");card.className="history";
+ const title=document.createElement("strong");title.textContent=r.name;const amount=document.createElement("p");amount.textContent=r.amount+" Points";
+ const status=document.createElement("span");status.className="status";if(r.status==="Approved")status.classList.add("approved");if(r.status==="Rejected")status.classList.add("rejected");status.textContent=r.status;
+ const date=document.createElement("p");date.textContent=r.date;card.append(title,amount,status,date);
+ if(r.status==="Pending"){const a=document.createElement("button");a.className="small-btn";a.textContent="✅ Approve";a.onclick=()=>manageRequest(r.id,"Approved");
+ const b=document.createElement("button");b.className="small-btn danger";b.textContent="❌ Reject";b.onclick=()=>manageRequest(r.id,"Rejected");card.append(a,b);}
+ list.appendChild(card);});
+}
+function manageRequest(id,action){
+ if(!adminLoggedIn){alert("Admin login required!");return;}
+ const r=rewardRequests.find(x=>x.id===id);if(!r||r.status!=="Pending"){alert("Already handled.");return;}
+ if(action==="Rejected"){points+=r.amount;addHistory("Refund: "+r.name,r.amount,"plus");}
+ r.status=action;logActivity("Redeem Request "+action,r.name+" request was "+action.toLowerCase()+" by demo admin.");
+ saveData();updatePoints();showRequestHistory();updateAdmin();
+ alert(action==="Approved"?"Demo approved. No real reward was sent.":"Rejected. Demo points returned.");
+}
+function comingSoon(){alert("This feature is coming soon!");}
+
+/* Wait for Firebase initialization; auth state listener decides which page to show. */
+firebaseReadyPromise.then(()=>{}).catch(()=>{});
+updatePoints();updateAdmin();showAuth("login");
+</script>
+</body>
+</html>
