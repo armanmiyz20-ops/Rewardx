@@ -219,18 +219,52 @@ function showAuth(page){
  document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
  const target=document.getElementById(page);if(target)target.classList.add("active");
 }
+
 async function loadFirebaseProfile(user){
- try{
-  const snap=await getDoc(doc(db,"users",user.uid));
-  const data=snap.exists()?snap.data():{};
-  account={name:data.name||user.displayName||user.email.split("@")[0],email:user.email,uid:user.uid,blocked:false};
-  localStorage.setItem("ateAccount",JSON.stringify(account));
- }catch(error){
-  console.error(error);
-  account={name:user.displayName||user.email.split("@")[0],email:user.email,uid:user.uid,blocked:false};
-  localStorage.setItem("ateAccount",JSON.stringify(account));
- }
+  try{
+    const snap = await getDoc(doc(db,"users",user.uid));
+    const data = snap.exists() ? snap.data() : {};
+
+    account = {
+      name: data.name || user.displayName || user.email.split("@")[0],
+      email: user.email,
+      uid: user.uid,
+      blocked: false
+    };
+
+    localStorage.setItem("ateAccount",JSON.stringify(account));
+
+  }catch(error){
+    console.error("Profile load error:",error);
+
+    account = {
+      name: user.displayName || user.email.split("@")[0],
+      email: user.email,
+      uid: user.uid,
+      blocked: false
+    };
+
+    localStorage.setItem("ateAccount",JSON.stringify(account));
+  }
+
+  try{
+    const walletSnap = await getDoc(doc(db,"wallets",user.uid));
+
+    if(walletSnap.exists()){
+      const walletData = walletSnap.data();
+      points = Number(walletData.points || 0);
+    }else{
+      points = 0;
+      console.warn("Wallet document not found.");
+    }
+  }catch(error){
+    console.error("Wallet load error:",error);
+    points = 0;
+  }
+
+  updatePoints();
 }
+
 async function signup(){
  const name=document.getElementById("signupName").value.trim();
  const email=document.getElementById("signupEmail").value.trim().toLowerCase();
